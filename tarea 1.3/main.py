@@ -54,10 +54,27 @@ def allowed_nota_fields():
 @app.get("/info-alumnos")
 def info_alumnos():
     """
-    Devuelve el listado de IDs de los alumnos.
+    Devuelve información completa de todos los alumnos.
     """
-    ids = df["ID"].tolist()
-    return {"alumnos_ids": ids, "count": len(ids)}
+    alumnos = []
+    for _, row in df.iterrows():
+        alumno = {
+            "ID": row["ID"],
+            "nombre_completo": get_fullname(row),
+            "apellidos": row["Apellidos"],
+            "nombre": row["Nombre"],
+            "asistencia": row["Asistencia"],
+            "notas": {
+                "Parcial1": row["Parcial1"],
+                "Parcial2": row["Parcial2"],
+                "Ordinario1": row["Ordinario1"],
+                "Practicas": row["Practicas"],
+                "OrdinarioPracticas": row["OrdinarioPracticas"]
+            }
+        }
+        alumnos.append(alumno)
+    
+    return {"alumnos": alumnos, "total": len(alumnos)}
 
 @app.get("/asistencia")
 def asistencia(id: str = Query(None, description="ID del alumno (p. ej. 1001)")):
@@ -164,3 +181,21 @@ def root():
         "endpoints": ["/info-alumnos", "/asistencia", "/notas"],
         "nota": "Consulta /docs para ver la documentación automática de FastAPI."
     }
+
+from fastapi import FastAPI
+from pydantic import BaseModel, Field
+
+app = FastAPI()
+
+
+class Item(BaseModel):
+    name: str = Field(examples=["Foo"])
+    description: str | None = Field(default=None, examples=["A very nice Item"])
+    price: float = Field(examples=[35.4])
+    tax: float | None = Field(default=None, examples=[3.2])
+
+
+@app.put("/items/{item_id}")
+async def update_item(item_id: int, item: Item):
+    results = {"item_id": item_id, "item": item}
+    return results
